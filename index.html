@@ -60,10 +60,11 @@ input:focus,textarea:focus{outline:2px solid #78aee8;background:#fff}
 <body>
 <div class="toolbar">
  <button class="primary" onclick="window.print()">Print / Save PDF</button>
+ <button class="primary" onclick="sendPdfEmail()">Send PDF by email</button>
  <button class="secondary" onclick="addRow()">+ Regel</button>
  <button class="secondary" onclick="saveLocal()">Bewaar op telefoon</button>
  <button class="secondary" onclick="resetForm()">Nieuwe factuur</button>
- <div class="help">Tik op elk veld om te wijzigen. Op iPhone/Android: Print / Save PDF en kies daarna PDF opslaan/delen.</div>
+ <div class="help">Tik op elk veld om te wijzigen. “Send PDF by email” opens the phone print/PDF flow first, then prepares an email to the invoice recipient. Because a normal HTML page cannot silently attach a generated PDF to your mail app, save/share the PDF from the phone and attach it to the prepared email.</div>
 </div>
 
 <div class="page-wrap">
@@ -95,6 +96,7 @@ input:focus,textarea:focus{outline:2px solid #78aee8;background:#fff}
    <input data-k="attn" value="T.a.v. Afd financiële administratie">
    <input data-k="clientStreet" value="Koppelstraat 36">
    <input data-k="clientCity" value="7391 AK Twello">
+   <input data-k="clientEmail" type="email" placeholder="E-mail klant (voor verzenden)">
   </div>
  </div>
 
@@ -144,6 +146,31 @@ function calc(){
  document.getElementById("vatAmount").value=money(vat);
  document.getElementById("grand").value=money(subtotal+vat-dep);
 }
+function sendPdfEmail(){
+ const recipient=(document.querySelector('[data-k="clientEmail"]')?.value||"").trim();
+ const number=(document.querySelector('[data-k="number"]')?.value||"").trim();
+ const client=(document.querySelector('[data-k="client"]')?.value||"").trim();
+ const company=(document.querySelector('[data-k="company"]')?.value||"De Morsaal Koerier BV").trim();
+ const subject=`Factuur ${number} - ${company}`;
+ const body=`Beste ${client||"heer/mevrouw"},
+
+In de bijlage vindt u factuur ${number}.
+
+Met vriendelijke groet,
+${company}`;
+
+ // Store the prepared email so it survives the print dialog.
+ sessionStorage.setItem("invoice_email_draft",JSON.stringify({recipient,subject,body}));
+ alert("Stap 1: kies in het volgende scherm ‘Opslaan als PDF’ of deel de PDF.\n\nDaarna opent de e-mailknop opnieuw een voorbereide e-mail. Voeg de zojuist opgeslagen PDF als bijlage toe.");
+ window.print();
+
+ // Open mail app shortly after the print dialog closes.
+ setTimeout(()=>{
+   const d=JSON.parse(sessionStorage.getItem("invoice_email_draft")||"{}");
+   location.href=`mailto:${encodeURIComponent(d.recipient||"")}?subject=${encodeURIComponent(d.subject||"")}&body=${encodeURIComponent(d.body||"")}`;
+ },700);
+}
+
 function saveLocal(){
  const fields={};document.querySelectorAll("[data-k]").forEach(x=>fields[x.dataset.k]=x.value);
  localStorage.setItem("morsaal_invoice_mobile",JSON.stringify({fields,rows,vatRate:vatRate.value,deposit:deposit.value}));
