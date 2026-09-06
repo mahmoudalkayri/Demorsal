@@ -194,7 +194,17 @@ async function sendPdfToGmail(){
    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
      await navigator.share({
        title:`Factuur ${number}`,
-       text:`Factuur ${number} - ${company}`,
+       text:`Geachte heer/mevrouw,
+
+Hierbij de factuur van week 33 als bijlage. Mocht u vragen hebben dan hoor ik het graag.
+
+--
+
+
+Met vriendelijke groeten,
+
+M.M Elbadawi
+De Morsaal koerier B.V`,
        files:[file]
      });
      return;
