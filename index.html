@@ -56,15 +56,14 @@ input:focus,textarea:focus{outline:2px solid #78aee8;background:#fff}
  input,textarea{border:0!important;background:transparent!important;outline:0!important;padding:0}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
 <div class="toolbar">
  <button class="primary" onclick="window.print()">Print / Save PDF</button>
- <button class="primary" onclick="sendPdfEmail()">Send PDF by email</button>
- <button class="secondary" onclick="addRow()">+ Regel</button>
- <button class="secondary" onclick="saveLocal()">Bewaar op telefoon</button>
- <button class="secondary" onclick="resetForm()">Nieuwe factuur</button>
- <div class="help">Tik op elk veld om te wijzigen. “Send PDF by email” opens the phone print/PDF flow first, then prepares an email to the invoice recipient. Because a normal HTML page cannot silently attach a generated PDF to your mail app, save/share the PDF from the phone and attach it to the prepared email.</div>
+ <button class="primary" onclick="sendPdfToGmail()">Send PDF with Gmail</button>
+ <div class="help">On your phone, “Send PDF with Gmail” creates the invoice PDF and opens the phone share sheet. Choose Gmail to send the PDF as an attachment.</div>
 </div>
 
 <div class="page-wrap">
@@ -96,7 +95,6 @@ input:focus,textarea:focus{outline:2px solid #78aee8;background:#fff}
    <input data-k="attn" value="T.a.v. Afd financiële administratie">
    <input data-k="clientStreet" value="Koppelstraat 36">
    <input data-k="clientCity" value="7391 AK Twello">
-   <input data-k="clientEmail" type="email" placeholder="E-mail klant (voor verzenden)">
   </div>
  </div>
 
@@ -146,29 +144,68 @@ function calc(){
  document.getElementById("vatAmount").value=money(vat);
  document.getElementById("grand").value=money(subtotal+vat-dep);
 }
-function sendPdfEmail(){
- const recipient=(document.querySelector('[data-k="clientEmail"]')?.value||"").trim();
- const number=(document.querySelector('[data-k="number"]')?.value||"").trim();
- const client=(document.querySelector('[data-k="client"]')?.value||"").trim();
- const company=(document.querySelector('[data-k="company"]')?.value||"De Morsaal Koerier BV").trim();
- const subject=`Factuur ${number} - ${company}`;
- const body=`Beste ${client||"heer/mevrouw"},
 
-In de bijlage vindt u factuur ${number}.
+async function makeInvoicePdfFile(){
+ const invoice=document.getElementById("invoice");
+ const editable=[...invoice.querySelectorAll("input,textarea")];
+ const states=editable.map(el=>({
+   el,
+   border:el.style.border,
+   background:el.style.background,
+   outline:el.style.outline
+ }));
+ editable.forEach(el=>{
+   el.style.border="0";
+   el.style.background="transparent";
+   el.style.outline="0";
+ });
 
-Met vriendelijke groet,
-${company}`;
+ try{
+   const canvas=await html2canvas(invoice,{
+     scale:2,
+     backgroundColor:"#ffffff",
+     useCORS:true,
+     logging:false,
+     width:invoice.scrollWidth,
+     height:invoice.scrollHeight
+   });
+   const img=canvas.toDataURL("image/jpeg",0.96);
+   const {jsPDF}=window.jspdf;
+   const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+   pdf.addImage(img,"JPEG",0,0,210,297);
+   const number=(document.querySelector('[data-k="number"]')?.value||"factuur").trim();
+   const blob=pdf.output("blob");
+   return new File([blob],`Factuur-${number}.pdf`,{type:"application/pdf"});
+ }finally{
+   states.forEach(s=>{
+     s.el.style.border=s.border;
+     s.el.style.background=s.background;
+     s.el.style.outline=s.outline;
+   });
+ }
+}
 
- // Store the prepared email so it survives the print dialog.
- sessionStorage.setItem("invoice_email_draft",JSON.stringify({recipient,subject,body}));
- alert("Stap 1: kies in het volgende scherm ‘Opslaan als PDF’ of deel de PDF.\n\nDaarna opent de e-mailknop opnieuw een voorbereide e-mail. Voeg de zojuist opgeslagen PDF als bijlage toe.");
- window.print();
+async function sendPdfToGmail(){
+ try{
+   const file=await makeInvoicePdfFile();
+   const number=(document.querySelector('[data-k="number"]')?.value||"").trim();
+   const company=(document.querySelector('[data-k="company"]')?.value||"De Morsaal Koerier BV").trim();
 
- // Open mail app shortly after the print dialog closes.
- setTimeout(()=>{
-   const d=JSON.parse(sessionStorage.getItem("invoice_email_draft")||"{}");
-   location.href=`mailto:${encodeURIComponent(d.recipient||"")}?subject=${encodeURIComponent(d.subject||"")}&body=${encodeURIComponent(d.body||"")}`;
- },700);
+   if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+     await navigator.share({
+       title:`Factuur ${number}`,
+       text:`Factuur ${number} - ${company}`,
+       files:[file]
+     });
+     return;
+   }
+
+   alert("Your browser cannot share PDF files directly. Use Print / Save PDF, then attach the saved PDF in Gmail.");
+ }catch(e){
+   if(e && e.name==="AbortError")return;
+   console.error(e);
+   alert("Could not create/share the PDF: "+(e?.message||e));
+ }
 }
 
 function saveLocal(){
