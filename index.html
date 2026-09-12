@@ -22,11 +22,33 @@ body.exporting .toolbar,body.exporting dialog{display:none!important}body.export
 @media(max-width:430px){.invoice{transform:scale(.43);margin-bottom:-169mm}}
 @page{size:A4 portrait;margin:0}
 @media print{html,body{width:210mm;height:297mm;background:#fff}.toolbar,dialog{display:none!important}.page-wrap{padding:0;overflow:visible}.invoice{width:210mm;height:297mm;min-height:297mm;margin:0;box-shadow:none;transform:none!important;padding:13mm 12mm 14mm;overflow:hidden}input{border:0!important;background:transparent!important;outline:0!important;padding:0}.note{display:none}}
+
+/* Full-sized paper, independent from the mobile preview. */
+.invoice{padding:18mm 17mm;color:#233346;line-height:1.45}
+.company{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9mm;border-top:2mm solid #173b50;padding-top:8mm}
+.company h1{display:block;white-space:normal;margin:0 0 7mm}
+.company h1 input{width:100%!important;min-width:0!important;font-size:17pt!important;letter-spacing:-.5px!important}
+.company .faded{display:block;color:#173b50;font-size:24pt!important;font-weight:400;letter-spacing:3px;margin-top:2mm}
+.lines{font-size:9pt;gap:1.3mm 2mm}.lines b{font-size:8pt;color:#697784}
+.invoice-meta{padding-top:0!important;align-content:start!important;grid-template-columns:20mm minmax(0,1fr)}
+.invoice-meta input,.invoice-meta input[data-k=email]{font-size:9pt;letter-spacing:0}
+.invoice input{border:0;border-bottom:1px solid #e9edf0;background:transparent;padding:1px 0}
+.billto{margin-top:11mm;padding:6mm;background:#f1f5f7;grid-template-columns:29mm 1fr;font-size:10pt}
+.billto label{font-size:8pt;text-transform:uppercase;letter-spacing:1px;color:#607482}
+.items{margin-top:10mm;font-size:10pt}.items th{background:#173b50;color:white;font-size:8pt;letter-spacing:.4px;text-align:left;padding:3mm 2mm;border:0}
+.items td{border:0;border-bottom:1px solid #dce4e8;padding:3mm 2mm}.items th:nth-child(n+3){text-align:right}
+.items .period{width:18%}.items .desc{width:31%}.items .qty{width:14%}.items .price{width:17%}.items .amount{width:20%}
+.summary{margin-top:6mm;width:58%;font-size:10pt}.summary td{padding:2mm}.summary .label{font-weight:400;color:#61717e}.summary .box{border:0;width:30%}.summary tr:last-child{background:#e8f0f3}.summary tr:last-child td{padding:4mm 2mm;font-weight:700;color:#173b50}.note{display:none}
+.invoice-footer{margin-top:16mm;border-top:1px solid #dce4e8;padding-top:4mm;font-size:9pt;color:#6b7983}
+body.starting .toolbar,body.starting .page-wrap{visibility:hidden}
+body.starting{background:#e7eef2}
+dialog::backdrop{background:#e7eef2f5}.modal-head{padding-top:28px}.modal-head h2{font-size:24px;color:#173b50}.modal-body{padding-top:16px}.field input{padding:13px}.primary{background:#1e5a70;color:white}.modal-actions{flex-wrap:wrap}.modal-actions button{min-height:44px}
+@media print{html,body{height:auto}.invoice{height:auto;min-height:297mm;overflow:visible;padding:18mm 17mm}.invoice input{border:0!important}.items tr,.summary,.company,.billto{break-inside:avoid}.items thead{display:table-header-group}.toolbar,.note,dialog{display:none!important}.invoice-footer{break-inside:avoid}}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
-<body>
+<body class="starting">
 <div class="toolbar"><button class="primary" onclick="openQuick()">Factuur maken</button><button class="secondary" onclick="openEditor()">Uitgebreide factuur</button><button class="quiet" onclick="window.print()">Print / PDF</button><span class="toolbar-note">A4 · gegevens worden lokaal bewaard</span></div>
 <div class="page-wrap"><section class="invoice" id="invoice">
 <div class="company"><div><h1><input data-k="company" value="De Morsaal Koerier BV" style="width:67mm;min-width:67mm;font-weight:800;font-size:15.5pt;letter-spacing:-.3px"> <span class="faded" style="font-size:15pt">FACTUUR</span></h1>
@@ -35,11 +57,11 @@ body.exporting .toolbar,body.exporting dialog{display:none!important}body.export
 <div class="billto"><label>Factuuradres:</label><div class="address-stack"><input data-k="client" value="All-Inn verspreidingen"><input data-k="attn" value="T.a.v. Afd financiële administratie"><input data-k="clientStreet" value="Koppelstraat 36"><input data-k="clientCity" value="7391 AK Twello"></div></div>
 <table class="items"><thead><tr><th class="period">Periode</th><th class="desc">Omschrijving</th><th class="qty">Aantal</th><th class="price">Prijs</th><th class="amount">BEDRAG</th></tr></thead><tbody id="itemBody"></tbody></table>
 <table class="summary"><tr><td class="label">SUBTOTAAL</td><td class="box"><input id="subtotal" readonly></td></tr><tr><td class="label">BTW-TARIEF</td><td class="box"><input id="vatRate" type="number" step="0.01" value="21" oninput="calc()"></td></tr><tr><td class="label">BTW-BEDRAG</td><td class="box"><input id="vatAmount" readonly></td></tr><tr><td class="label">Aanbetaling</td><td class="box"><input id="deposit" type="number" step="0.01" value="0" oninput="calc()"></td></tr><tr><td class="label"><b>Totaal te betalen bedrag</b></td><td class="box"><input id="grand" readonly style="font-weight:800"></td></tr></table><div class="note">Bedragen worden automatisch berekend uit aantal × prijs.</div>
-</section></div>
+<div class="invoice-footer">Bedankt voor uw vertrouwen.</div></section></div>
 <dialog id="quickDialog"><div class="modal-head"><div><h2>Factuur controleren</h2><p>Vul de bezorggegevens in voordat je de PDF verstuurt.</p></div><button class="close" onclick="quickDialog.close()">×</button></div><div class="modal-body"><div class="form-grid"><div class="field"><label>Datum</label><input id="qDate" type="date"></div><div class="field"><label>Week</label><input id="qWeek" type="number" min="1" max="53"><div class="preview" id="qNumber"></div></div><div class="field"><label>Aantal kranten</label><input id="qPapers" type="number" min="0"></div><div class="field"><label>Aantal folders</label><input id="qFolders" type="number" min="0"></div></div></div><div class="modal-actions"><button class="secondary" onclick="openEditorFromQuick()">Meer bewerken</button><button class="primary" onclick="applyQuickAndSend(this)">Send PDF with Gmail</button></div></dialog>
 <dialog id="editorDialog"><div class="modal-head"><div><h2>Uitgebreide factuur</h2><p>Pas de basisgegevens en factuurregels aan.</p></div><button class="close" onclick="editorDialog.close()">×</button></div><div class="modal-body"><div class="form-grid" style="margin-bottom:14px"><div class="field"><label>Datum</label><input id="eDate" type="date"></div><div class="field"><label>Week</label><input id="eWeek" type="number" min="1" max="53"></div></div><div class="editor-list" id="editorRows"></div><button class="add-line" onclick="addEditorRow()">+ Regel toevoegen</button></div><div class="modal-actions"><button class="secondary" onclick="applyEditor(false)">Wijzigingen bekijken</button><button class="primary" onclick="applyEditor(true,this)">Send PDF with Gmail</button></div></dialog>
 <script>
-const $=s=>document.querySelector(s), initialRows=[{period:"",desc:"Kranten",qty:"784",price:"0.10"},{period:"",desc:"Folders",qty:"260",price:"0.025"},{period:"",desc:"Reiskosten",qty:"1",price:"30.00"}];let rows=structuredClone(initialRows);
+const $=s=>document.querySelector(s), initialRows=[{period:"",desc:"Kranten",qty:"784",price:"0.10"},{period:"",desc:"Folders",qty:"260",price:"0.025"},{period:"",desc:"Reiskosten",qty:"1",price:"30.00"}];let rows=JSON.parse(JSON.stringify(initialRows));
 const money=v=>"€ "+(Number(v)||0).toLocaleString("nl-NL",{minimumFractionDigits:2,maximumFractionDigits:2}),num=v=>Number(String(v).replace(",","."))||0,esc=v=>String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[s]));
 function isoWeek(d=new Date()){const x=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));x.setUTCDate(x.getUTCDate()+4-(x.getUTCDay()||7));const y=new Date(Date.UTC(x.getUTCFullYear(),0,1));return Math.ceil((((x-y)/86400000)+1)/7)}
 function localDate(d=new Date()){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
@@ -49,16 +71,34 @@ function syncWeek(w){w=Math.max(1,Math.min(53,num(w)||isoWeek()));rows.forEach(r
 function renderRows(){itemBody.innerHTML=rows.map((r,i)=>`<tr><td><input value="${esc(r.period)}" oninput="setRow(${i},'period',this.value)"></td><td><input value="${esc(r.desc)}" oninput="setRow(${i},'desc',this.value)"></td><td><input class="num" inputmode="decimal" value="${esc(r.qty)}" oninput="setRow(${i},'qty',this.value)"></td><td><input class="num" inputmode="decimal" value="${esc(r.price)}" oninput="setRow(${i},'price',this.value)"></td><td class="num" id="amount${i}"></td></tr>`).join("");calc()}
 function setRow(i,k,v){rows[i][k]=v;calc();saveLocal()}function calc(){let s=0;rows.forEach((r,i)=>{const a=num(r.qty)*num(r.price);s+=a;const e=$("#amount"+i);if(e)e.textContent=money(a)});const vat=s*num(vatRate.value)/100;subtotal.value=money(s);vatAmount.value=money(vat);grand.value=money(s+vat-num(deposit.value))}
 function updateQuickNumber(){qNumber.textContent="Factuurnummer: "+invoiceNo(qWeek.value,qDate.value)}
-function openQuick(){qDate.value=$('[data-k=date]').value||localDate();qWeek.value=currentWeek();qPapers.value=rows.find(r=>/krant/i.test(r.desc))?.qty||0;qFolders.value=rows.find(r=>/folder/i.test(r.desc))?.qty||0;updateQuickNumber();quickDialog.showModal()}
+function openQuick(){qDate.value=$('[data-k=date]').value||localDate();qWeek.value=currentWeek();qPapers.value=rows.find(r=>/krant/i.test(r.desc))?.qty||0;qFolders.value=rows.find(r=>/folder/i.test(r.desc))?.qty||0;updateQuickNumber();if(!quickDialog.open)quickDialog.showModal();document.body.classList.remove("starting")}
 qDate.oninput=updateQuickNumber;qWeek.oninput=updateQuickNumber;
 function applyQuick(){$('[data-k=date]').value=qDate.value||localDate();const p=rows.find(r=>/krant/i.test(r.desc)),f=rows.find(r=>/folder/i.test(r.desc));if(p)p.qty=qPapers.value;if(f)f.qty=qFolders.value;syncWeek(qWeek.value);renderRows();saveLocal()}
 function openEditorFromQuick(){applyQuick();quickDialog.close();openEditor()}function openEditor(){eDate.value=$('[data-k=date]').value||localDate();eWeek.value=currentWeek();renderEditorRows();editorDialog.showModal()}
 function renderEditorRows(){editorRows.innerHTML=rows.map((r,i)=>`<div class="editor-row"><label><span class="mini">Periode</span><input value="${esc(r.period)}" oninput="rows[${i}].period=this.value"></label><label><span class="mini">Omschrijving</span><input value="${esc(r.desc)}" oninput="rows[${i}].desc=this.value"></label><label><span class="mini">Aantal</span><input inputmode="decimal" value="${esc(r.qty)}" oninput="rows[${i}].qty=this.value"></label><label><span class="mini">Prijs</span><input inputmode="decimal" value="${esc(r.price)}" oninput="rows[${i}].price=this.value"></label><button class="remove" onclick="removeEditorRow(${i})">×</button></div>`).join("")}
 function addEditorRow(){rows.push({period:"",desc:"",qty:"1",price:"0"});renderEditorRows();editorRows.scrollTop=editorRows.scrollHeight}function removeEditorRow(i){if(rows.length>1){rows.splice(i,1);renderEditorRows()}}
 function applyEditor(send,btn){$('[data-k=date]').value=eDate.value||localDate();syncWeek(eWeek.value);renderRows();saveLocal();editorDialog.close();if(send)sendPdfToGmail(btn)}
-async function makeInvoicePdfFile(){document.body.classList.add("exporting");try{const invoice=$("#invoice"),canvas=await html2canvas(invoice,{scale:2,backgroundColor:"#fff",useCORS:true,logging:false,width:invoice.scrollWidth,height:invoice.scrollHeight});const {jsPDF}=window.jspdf,pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"}),ratio=Math.min(210/canvas.width,297/canvas.height),w=canvas.width*ratio,h=canvas.height*ratio;pdf.addImage(canvas.toDataURL("image/jpeg",.96),"JPEG",(210-w)/2,(297-h)/2,w,h);return new File([pdf.output("blob")],`Factuur-${$('[data-k=number]').value||"factuur"}.pdf`,{type:"application/pdf"})}finally{document.body.classList.remove("exporting")}}
+async function makeInvoicePdfFile(){
+ if(!window.html2canvas||!window.jspdf)throw new Error("PDF-functie wordt nog geladen. Controleer uw internetverbinding en probeer opnieuw.");
+ const invoice=$("#invoice");
+ const canvas=await html2canvas(invoice,{scale:2,backgroundColor:"#fff",useCORS:true,logging:false,windowWidth:1100,scrollX:0,scrollY:0,
+ onclone:doc=>{
+ const paper=doc.getElementById("invoice");
+ doc.body.classList.remove("starting");
+ paper.style.cssText="transform:none!important;margin:0!important;width:210mm!important;min-height:297mm;padding:18mm 17mm;box-shadow:none;";
+ doc.querySelectorAll("dialog,.toolbar").forEach(e=>e.remove());
+ paper.querySelectorAll("input").forEach(input=>{const span=doc.createElement("span");let value=input.value;if(input.type==="date"&&value)value=value.split("-").reverse().join("-");span.textContent=value;span.style.cssText="display:block;white-space:normal;overflow-wrap:anywhere;min-height:1.45em;";if(input.classList.contains("num")||input.closest(".summary"))span.style.textAlign="right";input.replaceWith(span)});
+ }});
+ const {jsPDF}=window.jspdf,pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+ const pagePixels=Math.round(canvas.width*297/210);
+ for(let top=0,page=0;top<canvas.height-2;top+=pagePixels,page++){
+ const slice=document.createElement("canvas");slice.width=canvas.width;slice.height=Math.min(pagePixels,canvas.height-top);slice.getContext("2d").drawImage(canvas,0,top,canvas.width,slice.height,0,0,canvas.width,slice.height);
+ if(page)pdf.addPage();pdf.addImage(slice.toDataURL("image/png"),"PNG",0,0,210,slice.height*210/canvas.width);
+ }
+ return new File([pdf.output("blob")],`Factuur-${$('[data-k=number]').value||"factuur"}.pdf`,{type:"application/pdf"});
+}
 async function sendPdfToGmail(btn){const old=btn?.textContent;if(btn){btn.disabled=true;btn.textContent="PDF maken…"}try{const file=await makeInvoicePdfFile(),week=currentWeek(),number=$('[data-k=number]').value,company=$('[data-k=company]').value;if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){await navigator.share({title:`Factuur ${number}`,text:`Geachte heer/mevrouw,\n\nHierbij de factuur van week ${week} als bijlage. Mocht u vragen hebben dan hoor ik het graag.\n\nMet vriendelijke groeten,\n\nM.M Elbadawi\n${company}`,files:[file]})}else{const u=URL.createObjectURL(file),a=document.createElement("a");a.href=u;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);alert("De PDF is gedownload. Voeg hem als bijlage toe in Gmail.")}}catch(e){if(e?.name!=="AbortError"){console.error(e);alert("De PDF kon niet worden gemaakt: "+(e?.message||e))}}finally{if(btn){btn.disabled=false;btn.textContent=old}}}
 async function applyQuickAndSend(btn){applyQuick();quickDialog.close();await sendPdfToGmail(btn)}
 function saveLocal(){const fields={};document.querySelectorAll("[data-k]").forEach(x=>fields[x.dataset.k]=x.value);localStorage.setItem("morsaal_invoice_mobile",JSON.stringify({fields,rows,vatRate:vatRate.value,deposit:deposit.value}))}function loadLocal(){try{const s=JSON.parse(localStorage.getItem("morsaal_invoice_mobile")||"null");if(s){document.querySelectorAll("[data-k]").forEach(x=>{if(s.fields?.[x.dataset.k]!=null)x.value=s.fields[x.dataset.k]});if(Array.isArray(s.rows)&&s.rows.length)rows=s.rows;if(s.vatRate!=null)vatRate.value=s.vatRate;if(s.deposit!=null)deposit.value=s.deposit}}catch(e){}}
-document.addEventListener("input",e=>{if(e.target.matches("[data-k],#vatRate,#deposit"))saveLocal()});loadLocal();if(!$('[data-k=date]').value)$('[data-k=date]').value=localDate();if(!rows.some(r=>/^Week\s+\d+/i.test(r.period)))syncWeek(isoWeek());else $('[data-k=number]').value=invoiceNo(currentWeek());renderRows();
+document.addEventListener("input",e=>{if(e.target.matches("[data-k],#vatRate,#deposit"))saveLocal()});loadLocal();$('[data-k=date]').value=localDate();syncWeek(isoWeek());renderRows();openQuick();
 </script></body></html>
